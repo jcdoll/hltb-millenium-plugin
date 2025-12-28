@@ -18,7 +18,8 @@ async function init(): Promise<void> {
     log('Mode:', config.modeName);
     log('Using selectors:', {
       headerImage: config.headerImageSelector,
-      headerContainer: config.headerContainerSelector,
+      fallbackImage: config.fallbackImageSelector,
+      container: config.containerSelector,
     });
 
     await setupObserver(document, config);

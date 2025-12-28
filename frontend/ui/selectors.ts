@@ -1,16 +1,12 @@
 import { EUIMode, type UIModeConfig } from '../types';
 
-// Common container selector - parent of both logo and hero areas
-const COMMON_CONTAINER = '.NZMJ6g2iVnFsOOp-lDmIP';
-
 // Desktop mode selectors
 export const DESKTOP_CONFIG: UIModeConfig = {
   mode: EUIMode.Desktop,
   modeName: 'Desktop',
   headerImageSelector: '._3NBxSLAZLbbbnul8KfDFjw._2dzwXkCVAuZGFC-qKgo8XB',
-  headerContainerSelector: COMMON_CONTAINER,
   fallbackImageSelector: 'img.HNbe3eZf6H7dtJ042x1vM[src*="library_hero"]',
-  fallbackContainerSelector: COMMON_CONTAINER,
+  containerSelector: '.NZMJ6g2iVnFsOOp-lDmIP',
   appIdPattern: /\/assets\/(\d+)/,
 };
 
@@ -20,9 +16,8 @@ export const GAMEPAD_CONFIG: UIModeConfig = {
   mode: EUIMode.GamePad,
   modeName: 'Big Picture',
   headerImageSelector: '._3NBxSLAZLbbbnul8KfDFjw._2dzwXkCVAuZGFC-qKgo8XB',
-  headerContainerSelector: COMMON_CONTAINER,
   fallbackImageSelector: 'img.HNbe3eZf6H7dtJ042x1vM[src*="library_hero"]',
-  fallbackContainerSelector: COMMON_CONTAINER,
+  containerSelector: '.NZMJ6g2iVnFsOOp-lDmIP',
   appIdPattern: /\/assets\/(\d+)/,
 };
 

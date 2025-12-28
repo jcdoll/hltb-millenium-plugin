@@ -8,7 +8,7 @@ export function detectGamePage(doc: Document, config: UIModeConfig): GamePageInf
     const match = src.match(config.appIdPattern);
     if (match) {
       const appId = parseInt(match[1], 10);
-      const container = primaryImg.closest(config.headerContainerSelector) as HTMLElement | null;
+      const container = primaryImg.closest(config.containerSelector) as HTMLElement | null;
       if (container) {
         return { appId, container };
       }
@@ -22,7 +22,7 @@ export function detectGamePage(doc: Document, config: UIModeConfig): GamePageInf
     const match = src.match(config.appIdPattern);
     if (match) {
       const appId = parseInt(match[1], 10);
-      const container = fallbackImg.closest(config.headerContainerSelector) as HTMLElement | null;
+      const container = fallbackImg.closest(config.containerSelector) as HTMLElement | null;
       if (container) {
         return { appId, container };
       }

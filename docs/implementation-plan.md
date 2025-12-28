@@ -25,19 +25,26 @@ hltb-millennium-plugin/
 ├── plugin.json
 ├── package.json
 ├── tsconfig.json
-├── .prettierrc
 ├── frontend/
 │   ├── index.tsx
-│   ├── tsconfig.json
-│   ├── components/
-│   │   └── HltbDisplay.tsx
+│   ├── types.ts
+│   ├── display/
+│   │   ├── components.ts
+│   │   └── styles.ts
+│   ├── injection/
+│   │   ├── detector.ts
+│   │   └── observer.ts
 │   ├── services/
 │   │   ├── hltbApi.ts
-│   │   └── cache.ts
-│   └── utils/
-│       └── normalize.ts
+│   │   ├── cache.ts
+│   │   └── logger.ts
+│   └── ui/
+│       ├── selectors.ts
+│       └── uiMode.ts
+├── backend/
+│   └── main.py
 └── webkit/
-    └── hltb.css
+    └── index.tsx
 ```
 
 ### 1.2 Create Plugin Manifest
@@ -360,24 +367,26 @@ hltb-millennium-plugin/
 │   └── (documentation files)
 ├── frontend/
 │   ├── index.tsx
-│   ├── tsconfig.json
-│   ├── components/
-│   │   ├── HltbDisplay.tsx
-│   │   ├── HltbContainer.tsx
-│   │   └── SettingsPanel.tsx
+│   ├── types.ts
+│   ├── debug/
+│   │   └── tools.ts
+│   ├── display/
+│   │   ├── components.ts
+│   │   └── styles.ts
+│   ├── injection/
+│   │   ├── detector.ts
+│   │   └── observer.ts
 │   ├── services/
 │   │   ├── hltbApi.ts
 │   │   ├── cache.ts
-│   │   └── gameMatching.ts
-│   ├── hooks/
-│   │   └── useHltb.ts
-│   └── utils/
-│       ├── normalize.ts
-│       └── levenshtein.ts
+│   │   └── logger.ts
+│   └── ui/
+│       ├── selectors.ts
+│       └── uiMode.ts
 ├── backend/
-│   └── main.lua (if needed for CORS)
+│   └── main.py
 ├── webkit/
-│   └── hltb.css
+│   └── index.tsx
 ├── plugin.json
 ├── package.json
 └── tsconfig.json

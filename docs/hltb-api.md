@@ -268,11 +268,11 @@ HLTB may rate limit aggressive requests. Mitigation strategies:
 
 ## CORS Considerations
 
-Browser-based requests to the HLTB API may be blocked by CORS. Options:
+Browser-based requests to the HLTB API are blocked by CORS. Solution:
 
-1. Test if CORS is enforced (may work in Steam's CEF)
-2. Use Lua backend as proxy if needed
-3. Consider alternative APIs (e.g., AugmentedSteam's proxy)
+1. Python backend handles all HLTB requests using `howlongtobeatpy`
+2. Frontend calls backend via `Millennium.callServerMethod()`
+3. Backend returns JSON data to frontend
 
 ## Example Implementation
 

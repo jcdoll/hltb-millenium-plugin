@@ -9,11 +9,11 @@ The following table compares the Decky Loader platform (Steam Deck) with the Mil
 | Aspect | Decky (Steam Deck) | Millennium (Desktop) |
 |--------|-------------------|---------------------|
 | Frontend | TypeScript/React | TypeScript/React |
-| Backend | Python | Lua |
+| Backend | Python | Python |
 | UI Hooks | `decky-frontend-lib` | `@steambrew/client` APIs |
-| Build Tool | Rollup | Bun + `@steambrew/ttc` |
-| DOM Access | `serverApi.routerHook` | `Millennium.findElement()` |
-| HTTP Requests | `serverApi.fetchNoCors()` | Lua `http` module or `fetch()` |
+| Build Tool | Rollup | `@steambrew/ttc` |
+| DOM Access | `serverApi.routerHook` | MutationObserver + CSS selectors |
+| HTTP Requests | `serverApi.fetchNoCors()` | Python backend via `Millennium.callServerMethod()` |
 
 Both platforms use React for the frontend, which allows significant code reuse for UI components and business logic.
 
@@ -59,8 +59,8 @@ The following components from hltb-for-deck can be adapted with minimal changes:
 
 2. Backend Communication
    - Decky uses Python with `serverApi.fetchNoCors()`
-   - Millennium uses Lua with `http` module
-   - Alternative: frontend-only with `fetch()` if CORS permits
+   - Millennium uses Python with `Millennium.callServerMethod()`
+   - Backend handles HLTB lookups via `howlongtobeatpy` library
 
 3. Storage API
    - Decky uses `localforage` (IndexedDB wrapper)
@@ -81,23 +81,26 @@ hltb-millennium-plugin/
 ├── tsconfig.json            # TypeScript configuration
 ├── frontend/
 │   ├── index.tsx            # Plugin entry point
-│   ├── components/
-│   │   ├── HltbDisplay.tsx  # Stats display component
-│   │   ├── HltbContainer.tsx # Loading/error wrapper
-│   │   └── SettingsPanel.tsx # Plugin settings
+│   ├── types.ts             # Shared TypeScript types
+│   ├── debug/
+│   │   └── tools.ts         # Debug utilities (hltbDebug)
+│   ├── display/
+│   │   ├── components.ts    # HLTB display elements
+│   │   └── styles.ts        # CSS injection
+│   ├── injection/
+│   │   ├── detector.ts      # Game page detection
+│   │   └── observer.ts      # MutationObserver setup
 │   ├── services/
-│   │   ├── hltbApi.ts       # HLTB API client
-│   │   ├── cache.ts         # Caching layer
-│   │   └── gameMatching.ts  # Name matching logic
-│   ├── hooks/
-│   │   └── useHltb.ts       # React hook for HLTB data
-│   └── utils/
-│       ├── normalize.ts     # String normalization
-│       └── levenshtein.ts   # Fuzzy matching
+│   │   ├── hltbApi.ts       # HLTB API client (via backend)
+│   │   ├── cache.ts         # localStorage caching
+│   │   └── logger.ts        # Logging utilities
+│   └── ui/
+│       ├── selectors.ts     # CSS selectors for Desktop/GamePad modes
+│       └── uiMode.ts        # UI mode detection and switching
 ├── backend/
-│   └── main.lua             # Lua backend (optional)
+│   └── main.py              # Python backend (HLTB lookups)
 └── webkit/
-    └── hltb.css             # Custom styles
+    └── index.tsx            # Webkit entry point
 ```
 
 ### Data Flow
@@ -134,25 +137,25 @@ Return data   Fetch from HLTB API
 
 ## Key Technical Decisions
 
-### Decision 1: Frontend-Only vs Backend
+### Decision 1: Backend for HLTB Lookups
 
-Recommendation: Start with frontend-only using `fetch()`. Add Lua backend only if CORS blocking occurs.
+Implementation: Python backend using `howlongtobeatpy` library.
 
 Rationale:
-- Simpler architecture with fewer moving parts
-- AugmentedSteam used frontend-only approach via their proxy API
-- HLTB may not enforce strict CORS (requires verification)
-- Lua backend adds complexity and requires Steam restart for changes
+- HLTB API requires complex search logic best handled server-side
+- `howlongtobeatpy` provides reliable game matching
+- Backend can sanitize game names for better search results
+- Avoids CORS issues entirely
 
 ### Decision 2: Element Selection Strategy
 
-Recommendation: Use MutationObserver with CSS selector matching via `Millennium.findElement()`.
+Implementation: MutationObserver with CSS selectors for game page detection.
 
 Rationale:
 - Steam UI uses obfuscated class names that change between updates
-- Need to monitor for SPA navigation events
-- AugmentedSteam successfully uses this approach
-- Fallback selectors can handle minor Steam updates
+- MutationObserver detects SPA navigation and DOM changes
+- Dual image detection (logo.png primary, library_hero.jpg fallback)
+- Common container selector works for games with or without custom logos
 
 ### Decision 3: Cache Storage
 
@@ -178,10 +181,9 @@ Rationale:
 
 | Risk | Mitigation Strategy |
 |------|---------------------|
-| HLTB API changes | Abstract API layer, version detection |
-| Steam UI class changes | Multiple fallback selectors, semantic matching |
-| CORS blocking | Lua backend as fallback option |
-| HLTB rate limiting | Aggressive caching (2+ hour TTL), request debouncing |
-| Game matching failures | Multiple matching strategies, manual override |
+| HLTB API changes | Python `howlongtobeatpy` library abstracts API details |
+| Steam UI class changes | Fallback image selector, common container for both game types |
+| HLTB rate limiting | Aggressive caching (2+ hour TTL), stale-while-revalidate |
+| Game matching failures | Backend name sanitization, library handles fuzzy matching |
 | Big Picture issues | Document known issues, graceful degradation |
 | Mode switching | Re-initialize on window creation, clean observer cleanup |

@@ -102,14 +102,17 @@ After setup, your project should have this structure:
 ```
 hltb-millenium-plugin/
 ├── docs/                    # Documentation
-├── frontend/                # TypeScript/React frontend code
+├── frontend/                # TypeScript frontend code
 │   ├── index.tsx           # Plugin entry point
-│   ├── components/         # React components
+│   ├── types.ts            # Shared types
+│   ├── debug/              # Debug utilities
+│   ├── display/            # UI components and styles
+│   ├── injection/          # Game page detection
 │   ├── services/           # API and cache services
-│   ├── hooks/              # React hooks
-│   └── utils/              # Utility functions
-├── backend/                 # Lua backend (optional)
-├── webkit/                  # CSS styles
+│   └── ui/                 # UI mode and selectors
+├── backend/                 # Python backend
+│   └── main.py             # HLTB lookups
+├── webkit/                  # WebKit entry
 ├── plugin.json             # Plugin manifest
 ├── package.json            # Dependencies
 └── tsconfig.json           # TypeScript config

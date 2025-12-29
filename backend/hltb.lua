@@ -26,6 +26,7 @@ M.BASE_URL = "https://howlongtobeat.com/"
 M.REFERER_HEADER = M.BASE_URL
 M.TIMEOUT = 60
 M.TOKEN_TTL = 300
+M.SEARCH_SIZE = 20
 -- Static fallback URL
 M.SEARCH_URL = M.BASE_URL .. "api/search"
 
@@ -33,6 +34,7 @@ M.SEARCH_URL = M.BASE_URL .. "api/search"
 local cached_token = nil
 local cached_search_url = nil
 local cached_build_id = nil
+local cached_homepage = nil
 local token_expires_at = 0
 
 -- User agent for requests
@@ -46,17 +48,30 @@ local SKIP_ENDPOINTS = {
     logout = true
 }
 
--- Extract search endpoint from website JavaScript
--- Searches all NextJS chunk scripts for fetch POST calls to /api/*
-local function extract_search_url()
-    logger:info("Extracting search endpoint from website...")
+-- Validate that a table has required fields with expected types
+-- Returns true if valid, or false and the failing field name
+local function validate_fields(tbl, schema)
+    for _, field in ipairs(schema) do
+        if type(tbl[field.name]) ~= field.expected_type then
+            return false, field.name
+        end
+    end
+    return true, nil
+end
+
+-- Fetch and cache the HLTB homepage (used by multiple extraction functions)
+local function get_homepage()
+    if cached_homepage then
+        return cached_homepage
+    end
+
+    logger:info("Fetching HLTB homepage...")
 
     local headers = {
         ["User-Agent"] = USER_AGENT,
         ["referer"] = M.REFERER_HEADER
     }
 
-    -- Get homepage
     local response, err = http.get(M.BASE_URL, {
         headers = headers,
         timeout = M.TIMEOUT
@@ -67,9 +82,28 @@ local function extract_search_url()
         return nil
     end
 
+    cached_homepage = response.body
+    return cached_homepage
+end
+
+-- Extract search endpoint from website JavaScript
+-- Searches all NextJS chunk scripts for fetch POST calls to /api/*
+local function extract_search_url()
+    logger:info("Extracting search endpoint from website...")
+
+    local homepage = get_homepage()
+    if not homepage then
+        return nil
+    end
+
+    local headers = {
+        ["User-Agent"] = USER_AGENT,
+        ["referer"] = M.REFERER_HEADER
+    }
+
     -- Find all chunk scripts: _next/static/chunks/*.js
     local script_urls = {}
-    for src in response.body:gmatch('["\'](/_next/static/chunks/[^"\']+%.js)["\']') do
+    for src in homepage:gmatch('["\'](/_next/static/chunks/[^"\']+%.js)["\']') do
         table.insert(script_urls, src)
     end
 
@@ -125,25 +159,15 @@ local function extract_build_id()
 
     logger:info("Extracting NextJS build ID...")
 
-    local headers = {
-        ["User-Agent"] = USER_AGENT,
-        ["referer"] = M.REFERER_HEADER
-    }
-
-    local response, err = http.get(M.BASE_URL, {
-        headers = headers,
-        timeout = M.TIMEOUT
-    })
-
-    if not response or response.status ~= 200 then
-        logger:info("Failed to fetch homepage for build ID")
+    local homepage = get_homepage()
+    if not homepage then
         return nil
     end
 
     -- Look for /_next/static/{buildId}/_ssgManifest.js or _buildManifest.js
-    local build_id = response.body:match('/_next/static/([^/]+)/_ssgManifest%.js')
+    local build_id = homepage:match('/_next/static/([^/]+)/_ssgManifest%.js')
     if not build_id then
-        build_id = response.body:match('/_next/static/([^/]+)/_buildManifest%.js')
+        build_id = homepage:match('/_next/static/([^/]+)/_buildManifest%.js')
     end
 
     if build_id then
@@ -223,39 +247,18 @@ local function fetch_game_data(game_id)
 
     local game_data = game_array[1]
 
-    -- Validate all required fields are numbers (matching reference exactly)
-    if type(game_data.comp_main) ~= "number" then
-        logger:info("Unexpected JSON data: comp_main is not number")
-        return nil
-    end
-
-    if type(game_data.comp_plus) ~= "number" then
-        logger:info("Unexpected JSON data: comp_plus is not number")
-        return nil
-    end
-
-    if type(game_data.comp_100) ~= "number" then
-        logger:info("Unexpected JSON data: comp_100 is not number")
-        return nil
-    end
-
-    if type(game_data.comp_all) ~= "number" then
-        logger:info("Unexpected JSON data: comp_all is not number")
-        return nil
-    end
-
-    if type(game_data.game_id) ~= "number" then
-        logger:info("Unexpected JSON data: game_id is not number")
-        return nil
-    end
-
-    if type(game_data.profile_steam) ~= "number" then
-        logger:info("Unexpected JSON data: profile_steam is not number")
-        return nil
-    end
-
-    if type(game_data.game_name) ~= "string" then
-        logger:info("Unexpected JSON data: game_name is not string")
+    -- Validate all required fields (matching reference exactly)
+    local valid, failed_field = validate_fields(game_data, {
+        { name = "comp_main", expected_type = "number" },
+        { name = "comp_plus", expected_type = "number" },
+        { name = "comp_100", expected_type = "number" },
+        { name = "comp_all", expected_type = "number" },
+        { name = "game_id", expected_type = "number" },
+        { name = "profile_steam", expected_type = "number" },
+        { name = "game_name", expected_type = "string" },
+    })
+    if not valid then
+        logger:info("Unexpected JSON data: " .. failed_field .. " has wrong type")
         return nil
     end
 
@@ -345,7 +348,7 @@ local function get_search_request_data(game_name, modifier, page)
         searchType = "games",
         searchTerms = search_terms,
         searchPage = page,
-        size = 20,
+        size = M.SEARCH_SIZE,
         searchOptions = {
             games = {
                 userId = 0,
@@ -453,6 +456,17 @@ function M.search(query, options)
         return nil
     end
 
+    -- Log first result to see all available fields
+    if #data.data > 0 then
+        local first = data.data[1]
+        local fields = {}
+        for k, v in pairs(first) do
+            table.insert(fields, k .. "=" .. tostring(v))
+        end
+        table.sort(fields)
+        logger:info("Search result fields: " .. table.concat(fields, ", "))
+    end
+
     -- Validate each item has required fields
     for _, item in ipairs(data.data) do
         if type(item.game_id) ~= "number" then
@@ -488,47 +502,19 @@ function M.search_best_match(app_name, steam_app_id)
 
     logger:info("Found " .. #search_results.data .. " search results")
 
-    local game_data_cache = {}
+    -- Search results already contain completion times, so we can return them directly
+    -- Only fetch_game_data is needed for Steam ID verification (profile_steam field)
 
-    -- Helper to get game data with caching
-    local function get_game_data(game_id)
-        if game_data_cache[game_id] then
-            return game_data_cache[game_id]
-        end
-        local data = fetch_game_data(game_id)
-        if data then
-            game_data_cache[game_id] = data
-        end
-        return data
-    end
-
-    -- Search by Steam app ID first (matching reference)
-    if steam_app_id then
-        for _, item in ipairs(search_results.data) do
-            local game_data = fetch_game_data(item.game_id)
-            if not game_data then
-                -- Reference: return null on error
-                return nil
-            end
-            game_data_cache[item.game_id] = game_data
-
-            if game_data.profile_steam == steam_app_id then
-                logger:info("Found match by Steam ID: " .. item.game_name)
-                return game_data
-            end
-        end
-    end
-
-    -- Search by exact app name (matching reference)
+    -- Check exact name match first (no HTTP needed)
     local normalized_app_name = utils.sanitize_game_name(app_name):lower()
     for _, item in ipairs(search_results.data) do
         if utils.sanitize_game_name(item.game_name):lower() == normalized_app_name then
             logger:info("Found exact name match: " .. item.game_name)
-            return get_game_data(item.game_id)
+            return item
         end
     end
 
-    -- Find closest match using Levenshtein distance (matching reference)
+    -- Find closest match using Levenshtein distance
     local possible_choices = {}
     for _, item in ipairs(search_results.data) do
         local normalized_item_name = utils.sanitize_game_name(item.game_name):lower()
@@ -540,7 +526,7 @@ function M.search_best_match(app_name, steam_app_id)
         })
     end
 
-    -- Sort by distance, then by comp_all_count descending (matching reference)
+    -- Sort by distance, then by comp_all_count descending
     table.sort(possible_choices, function(a, b)
         if a.distance == b.distance then
             return a.comp_all_count > b.comp_all_count
@@ -548,10 +534,24 @@ function M.search_best_match(app_name, steam_app_id)
         return a.distance < b.distance
     end)
 
+    -- Try Steam ID match on top candidates (requires HTTP to get profile_steam)
+    if steam_app_id and #possible_choices > 0 then
+        local max_steam_id_checks = 3
+        for i = 1, math.min(max_steam_id_checks, #possible_choices) do
+            local candidate = possible_choices[i]
+            local game_data = fetch_game_data(candidate.item.game_id)
+            if game_data and game_data.profile_steam == steam_app_id then
+                logger:info("Found match by Steam ID: " .. candidate.item.game_name)
+                return candidate.item
+            end
+        end
+    end
+
+    -- Return best Levenshtein match
     if #possible_choices > 0 then
         local best = possible_choices[1]
         logger:info("Found closest match: " .. best.item.game_name .. " (distance: " .. best.distance .. ")")
-        return get_game_data(best.item.game_id)
+        return best.item
     end
 
     return nil
@@ -561,6 +561,7 @@ end
 function M.clear_cache()
     cached_search_url = nil
     cached_build_id = nil
+    cached_homepage = nil
     cached_token = nil
     token_expires_at = 0
 end

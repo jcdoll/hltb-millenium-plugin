@@ -58,19 +58,21 @@ When releasing a new version:
 
 1. Update version in both `plugin.json` and `package.json` (must match)
 
-2. Build and test the plugin locally:
+2. Run `npm install` to update package-lock.json
+
+3. Build and test the plugin locally:
    ```bash
    npm run build
    ```
 
-3. Commit and push changes to the plugin repository
+4. Commit and push changes to the plugin repository
 
-4. Run the "Create Release" GitHub Action:
+5. Run the "Create Release" GitHub Action:
    - Go to Actions > Create Release > Run workflow
-   - Enter the version number (must match plugin.json and package.json)
+   - Enter the version number (must match all three files)
    - The workflow validates versions match, builds, and creates a GitHub release
 
-5. Update the submodule in PluginDatabase:
+6. Update the submodule in PluginDatabase:
    ```bash
    cd PluginDatabase/plugins/hltb-millennium-plugin
    git pull origin main
@@ -80,9 +82,9 @@ When releasing a new version:
    git push
    ```
 
-6. Open a new Pull Request to `SteamClientHomebrew/PluginDatabase`
+7. Open a new Pull Request to `SteamClientHomebrew/PluginDatabase`
 
-7. Each update requires maintainer review before reaching users
+Each update requires maintainer review before reaching users.
 
 ## Notes
 

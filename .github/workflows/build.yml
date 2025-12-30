@@ -36,16 +36,22 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate version matches plugin.json and package.json
+      - name: Validate version matches plugin.json, package.json, and package-lock.json
         run: |
           PLUGIN_VERSION=$(jq -r '.version' plugin.json)
           PACKAGE_VERSION=$(jq -r '.version' package.json)
+          LOCK_VERSION=$(jq -r '.version' package-lock.json)
           if [ "$PLUGIN_VERSION" != "${{ inputs.version }}" ]; then
             echo "Error: Input version (${{ inputs.version }}) does not match plugin.json version ($PLUGIN_VERSION)"
             exit 1
           fi
           if [ "$PACKAGE_VERSION" != "${{ inputs.version }}" ]; then
             echo "Error: Input version (${{ inputs.version }}) does not match package.json version ($PACKAGE_VERSION)"
+            exit 1
+          fi
+          if [ "$LOCK_VERSION" != "${{ inputs.version }}" ]; then
+            echo "Error: Input version (${{ inputs.version }}) does not match package-lock.json version ($LOCK_VERSION)"
+            echo "Run 'npm install' to update package-lock.json"
             exit 1
           fi
           echo "Version validated: $PLUGIN_VERSION"

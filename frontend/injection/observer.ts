@@ -1,4 +1,3 @@
-import { sleep } from '@steambrew/client';
 import type { LibrarySelectors } from '../types';
 import { log } from '../services/logger';
 import { fetchHltbData } from '../services/hltbApi';
@@ -11,9 +10,6 @@ import {
   removeExistingDisplay,
 } from '../display/components';
 import { injectStyles } from '../display/styles';
-
-const MAX_RETRIES = 20;
-const RETRY_DELAY_MS = 250;
 
 let currentAppId: number | null = null;
 let processingAppId: number | null = null;
@@ -101,7 +97,7 @@ async function handleGamePage(doc: Document, selectors: LibrarySelectors): Promi
   }
 }
 
-export async function setupObserver(doc: Document, selectors: LibrarySelectors): Promise<void> {
+export function setupObserver(doc: Document, selectors: LibrarySelectors): void {
   // Clean up existing observer
   if (observer) {
     observer.disconnect();
@@ -121,18 +117,8 @@ export async function setupObserver(doc: Document, selectors: LibrarySelectors):
 
   log('MutationObserver set up');
 
-  // Retry loop to find game page
-  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    const gamePage = detectGamePage(doc, selectors);
-    if (gamePage) {
-      log('setupObserver: game page found on attempt', attempt, 'of', MAX_RETRIES);
-      handleGamePage(doc, selectors);
-      return;
-    }
-    await sleep(RETRY_DELAY_MS);
-  }
-
-  log('setupObserver: no game page found after', MAX_RETRIES, 'attempts');
+  // Initial check for already-rendered game page
+  handleGamePage(doc, selectors);
 }
 
 export function disconnectObserver(): void {

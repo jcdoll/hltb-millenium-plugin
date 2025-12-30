@@ -37,9 +37,10 @@ async function handleGamePage(doc: Document, selectors: LibrarySelectors): Promi
     return;
   }
 
-  // Check if display already exists for this app
+  // Check if display already exists for this app and has content
+  // (Steam can clear children on hover, leaving an empty container)
   const existingDisplay = getExistingDisplay(doc);
-  if (appId === currentAppId && existingDisplay) {
+  if (appId === currentAppId && existingDisplay && existingDisplay.children.length > 0) {
     return;
   }
 

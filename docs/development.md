@@ -72,6 +72,15 @@ Key tabs:
 
 Frontend logs use `console.log()`. Backend logs use `logger:info()` and appear in `<Steam>/logs/millennium.log`.
 
+Debug tools are exposed via `hltbDebug` in the console:
+```javascript
+hltbDebug.inspectElement('#hltb-for-millennium')  // Check HLTB display element
+hltbDebug.inspectElement('.NZMJ6g2iVnFsOOp-lDmIP')  // Check Steam container
+hltbDebug.cacheStats()  // View cache statistics
+hltbDebug.clearCache()  // Clear the cache
+hltbDebug.logDOM()  // Log DOM structure
+```
+
 ## Common Issues
 
 - Plugin not loading: Check build output, try F5, restart Steam

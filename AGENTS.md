@@ -4,6 +4,9 @@ This project is a [Millennium](https://steambrew.app/) plugin that displays [How
 
 ## Development flow
 
+### Always rebuild after frontend changes
+- The agent should always rebuild via `npm run build` after every frontend change
+
 ### If unsure or stuck ask the user
 - If the user asks you to do something and it fails, do not silently move on. Ask the user for help.
 - If you are unsure about what to do or the user requirements are unclear ask for clarification.

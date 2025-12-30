@@ -38,6 +38,11 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Inject version into plugin.json
+        run: |
+          jq --arg v "${{ inputs.version }}" '. + {version: $v}' plugin.json > plugin.json.tmp
+          mv plugin.json.tmp plugin.json
+
       - name: Create zip
         run: |
           mkdir -p build/hltb-for-millennium/.millennium

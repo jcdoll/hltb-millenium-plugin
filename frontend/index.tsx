@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { definePlugin, Millennium, IconsModule, Field, DialogButton } from '@steambrew/client';
 import { log } from './services/logger';
 import { LIBRARY_SELECTORS } from './types';
@@ -6,8 +7,6 @@ import { exposeDebugTools, removeDebugTools } from './debug/tools';
 import { removeStyles } from './display/styles';
 import { removeExistingDisplay } from './display/components';
 import { clearCache, getCacheStats } from './services/cache';
-
-const { useState } = (window as any).SP_REACT;
 
 let currentDocument: Document | undefined;
 

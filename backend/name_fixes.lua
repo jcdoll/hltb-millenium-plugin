@@ -8,4 +8,5 @@ return {
     ["LEGO Star Wars - The Complete Saga"] = "LEGO Star Wars: The Complete Saga",
     ["LEGO Star Wars III - The Clone Wars"] = "LEGO Star Wars III: The Clone Wars",
     ["Rock of Ages 2: Bigger & Boulder"] = "Rock of Ages II: Bigger & Boulder",
+    ["FINAL FANTASY TACTICS - The Ivalice Chronicles"] = "Final Fantasy Tactics: The Ivalice Chronicles",
 }
